@@ -22,16 +22,17 @@ class ExitThisLoopException(Exception):
     pass
 
 
-class TransactioChecker(threading.Thread):
+class TransactionChecker(threading.Thread):
     def __init__(self, main):
         threading.Thread.__init__(self)
         self.main = main
+        self.logger = logging.getLogger(self.__class__.__name__)
         self.do_stop = False
         self.latestUserList = None
         self.cachedUserList = None
 
     def run(self):
-        logging.info("TransactioChecker is running")
+        self.logger.info("TransactionChecker is running")
         try:
             while not self.do_stop:
                 try:
@@ -40,10 +41,10 @@ class TransactioChecker(threading.Thread):
                     # do nothing, just go to the next loop
                     pass
         except Exception as ex:
-            logging.error(
+            self.logger.exception(
                 "An Exception crashed the Transaction checker : " + str(ex))
 
-        logging.info("TransactioChecker exits NOW.")
+        self.logger.info("TransactionChecker exits NOW.")
 
     def loop(self):
         try:
@@ -52,7 +53,7 @@ class TransactioChecker(threading.Thread):
 
             # Check for changes
             if not self.cachedUserList == None:
-                logging.info("Check UserList for changes...")
+                self.logger.info("Check UserList for changes...")
                 ids = self.getUserIdsWithChanges()
 
                 for id in ids:
@@ -61,14 +62,14 @@ class TransactioChecker(threading.Thread):
 
             # No LastUserList or invalid List = no changes. Save list.
             else:
-                logging.info(
+                self.logger.info(
                     "First run. Cache only UserList.")
 
             self.updateCachedUserList()
 
         except Exception as ex:
-            logging.error("Exception caught in loop! " + str(ex) +
-                          " Traceback: " + traceback.format_exc())
+            self.logger.exception("Exception caught in loop! " + str(ex) +
+                                  " Traceback: " + traceback.format_exc())
 
         time.sleep(1)
 
@@ -77,15 +78,15 @@ class TransactioChecker(threading.Thread):
 
     def updateCachedUserList(self):
         if not self.latestUserList['users']:
-            logging.error("Some problem with latestUserList")
+            self.logger.error("Some problem with latestUserList")
         else:
             self.cachedUserList = {}
             for user in self.latestUserList["users"]:
                 self.cachedUserList[user["id"]] = user["updated"]
 
     def processLastTransactions(self, userid, since):
-        logging.info("Process Transaction for user %d since %s" %
-                     (userid, since))
+        self.logger.info("Process Transaction for user %d since %s" %
+                         (userid, since))
 
         urlData = config.strichliste['apiurl'] + \
             "/user/%d/transaction" % userid
@@ -97,8 +98,8 @@ class TransactioChecker(threading.Thread):
                     dtcreated = self.main.parseTime(transaction["created"])
                     dtupdated = self.main.parseTime(since)
                 except Exception as ex:
-                    logging.error("Error parsing time. Ignoring transaction! " + str(ex) +
-                                  " Traceback: " + traceback.format_exc())
+                    self.logger.exception("Error parsing time. Ignoring transaction! " + str(ex) +
+                                          " Traceback: " + traceback.format_exc())
                     break
 
                 if dtcreated >= dtupdated:
@@ -118,25 +119,26 @@ class TransactioChecker(threading.Thread):
                         print(message)
                         # sendMessage(chatid, message)
                     else:
-                        logging.error("No article")
+                        self.logger.error("No article")
 
     def getUserIdsWithChanges(self):
         userIdsWithChanges = []
         if not self.latestUserList['users']:
-            logging.error("Some problem with latestUserList")
+            self.logger.error("Some problem with latestUserList")
         else:
             for user in self.latestUserList["users"]:
-                logging.debug("Check User %d" % user["id"])
+                self.logger.debug("Check User %d" % user["id"])
                 if not self.cachedUserList.get(user["id"]) == None:
                     if user['updated'] != self.cachedUserList.get(user["id"]):
-                        logging.info("yes, user %d has changes!" % user['id'])
+                        self.logger.info(
+                            "yes, user %d has changes!" % user['id'])
                         userIdsWithChanges.append(user["id"])
                         # userIdsWithChanges.append([user["id"], lastuserobj["updated"]])
                     else:
-                        logging.debug("no, user %d has no changes!" %
-                                      user['id'])
+                        self.logger.debug("no, user %d has no changes!" %
+                                          user['id'])
                 else:
-                    logging.debug(
+                    self.logger.debug(
                         "New User or User without transactions. Ignoring.")
 
         return userIdsWithChanges
@@ -167,32 +169,33 @@ class StrichlisteTelegramBridge():
         print("StrichlisteTelegramBride started.")
         self.thread = None
         self.sl_json_user = None
+        self.logger = logging.getLogger(self.__class__.__name__)
         # self.scriptpath = os.path.dirname(os.path.realpath(__file__))
         # self.userjsonfile = scriptpath+"/"+config_userlist
         # self.telegramapi = config_tg_apiurl + config_bottoken
 
-    def start_TransactioChecker(self):
+    def start_TransactionChecker(self):
         if self.thread is None:
-            logging.info("Starting listener.")
-            self.thread = TransactioChecker(self)
+            self.logger.info("Starting listener.")
+            self.thread = TransactionChecker(self)
             # self.thread.daemon = True
             self.thread.start()
 
-    def stop_TransactioChecker(self):
+    def stop_TransactionChecker(self):
         if self.thread is not None:
 
-            logging.info("Stopping listener.")
+            self.logger.info("Stopping listener.")
             self.thread.stop()
             self.thread = None
 
     def getResponse(self, url):
         operUrl = urllib.request.urlopen(url)
         if (operUrl.getcode() == 200):
-            logging.debug("getResponse HTTP Code: %d " % operUrl.getcode())
+            self.logger.debug("getResponse HTTP Code: %d " % operUrl.getcode())
             data = operUrl.read()
             jsonData = json.loads(data)
         else:
-            logging.error("Error receiving data:  %d " % operUrl.getcode())
+            self.logger.error("Error receiving data:  %d " % operUrl.getcode())
         return jsonData
 
     def parseTime(self, strtime):
@@ -201,9 +204,13 @@ class StrichlisteTelegramBridge():
 
 
 def main():
-    logging.basicConfig(level=config.logginglevel)
+    # Setup Logger
+    logging.basicConfig(level=config.logginglevel,
+                        format='%(asctime)s %(funcName)s@%(name)s (%(threadName)s): %(message)s')
+
     strichliste = StrichlisteTelegramBridge()
-    strichliste.start_TransactioChecker()
+    strichliste.start_TransactionChecker()
+
     # userIdsWithChanges = getUserIdsWithChanges(jsonData)
     # print(userIdsWithChanges)
     # for id in userIdsWithChanges:
