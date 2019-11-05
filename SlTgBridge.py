@@ -1,5 +1,5 @@
 #!/usr/bin/python3 -u
- 
+
 from enum import Enum
 from urllib.parse import urlencode
 from datetime import datetime
@@ -29,6 +29,7 @@ scriptdir = os.path.dirname(os.path.realpath(__file__))
 
 class ExitThisLoopException(Exception):
     pass
+
 
 class TransactionType(Enum):
     BUY_ARTICLE = 1
@@ -137,32 +138,42 @@ class TelegramListener(threading.Thread):
         self.logger.info("Got a command: '%s' in chat %s",
                          command, message['message']['chat']['id'])
 
-        if not sl_id:
-            if command == "/start" or command == "/help":
-                self.main.send_msg(
-                    "Welcome to the <b>Strichliste Telegram Bridge</b>!\nEnter / in the chat or click on the [/] to see all available commands.", chatID=chat_id, markup="HTML")
-            elif command == "/map":
+        if command == "/start" or command == "/help":
+            self.main.send_msg(
+                "Welcome to the <b>Strichliste Telegram Bridge</b>!\nEnter / in the chat or click on the [/] to see all available commands.", chatID=chat_id, markup="HTML")
 
-                while True:
-                    token = self.main.randomStringDigits(
-                        config.strichliste['activation_token_len'])
-                    if self.main.pendingActivations.get(token) == None:
-                        break
+        elif command == "/map":
 
-                self.main.send_msg(
-                    "Send money to someone user within the next <b>two</b> minutes (can be undo immediately) with the following token in the note:\n\n<code>%s</code>" % token, markup="HTML", chatID=chat_id)
-                self.main.pendingActivations[token] = dict(
-                    time=time.time(), chatid=chat_id)
-            else:
-                self.main.send_msg(
-                    "You must first /map to your Strichliste account to do this!", chatID=chat_id)
+            while True:
+                token = self.main.randomStringDigits(
+                    config.strichliste['activation_token_len'])
+                if self.main.pendingActivations.get(token) == None:
+                    break
+
+            self.main.send_msg(
+                "Send money to someone user within the next <b>two</b> minutes (can be undo immediately) with the following token in the note:\n\n<code>%s</code>" % token, markup="HTML", chatID=chat_id)
+            self.main.pendingActivations[token] = dict(
+                time=time.time(), chatid=chat_id)
         else:
-            if command == "/unmap":
-                self.main.send_msg(
-                    "You won't get any more notifications from now on.", markup="HTML", chatID=chat_id)
-                self.main.deleteAuthorizedUsers(sl_id)
-            elif command == "/me":
-                if sl_id:
+
+            if not sl_id:  # unauthorized user
+
+                if command == "/unmap" or command == "/me" or command == "/balance":
+
+                    self.main.send_msg(
+                        "You are not allowed to do this!\nYou must first /map your Telegram to your Strichliste account!", chatID=chat_id)
+                else:
+                    self.main.send_msg(
+                        "Unkown command. Enter / in the chat or click on the [/] to see all available commands.", chatID=chat_id)
+            else:
+
+                if command == "/unmap":
+
+                    self.main.send_msg(
+                        "You won't get any more notifications from now on.", markup="HTML", chatID=chat_id)
+                    self.main.deleteAuthorizedUsers(sl_id)
+
+                elif command == "/me":
 
                     userinfo = self.main.getUserInfo(sl_id)['user']
 
@@ -178,36 +189,30 @@ class TelegramListener(threading.Thread):
                                       userinfo['id'],
                                       html.escape(userinfo['name']),
                                       ("---" if userinfo['email'] ==
-                                          None or userinfo['email'] == "" else html.escape(userinfo['email'])),
+                                       None or userinfo['email'] == "" else html.escape(userinfo['email'])),
                                       (userinfo['balance']/100),
                                       ("Yes" if userinfo['isActive']
                                        else "No"),
                                       ("Yes" if userinfo['isDisabled']
-                                          else "No"),
+                                       else "No"),
                                       userinfo['created'],
-                                      userinfo['updated']
-                                  )
-                                  )
+                                      userinfo['updated']))
 
                     self.main.send_msg(
                         message, chatID=chat_id, markup="HTML")
 
-            elif command == "/balance":
+                elif command == "/balance":
 
-                userinfo = self.main.getUserInfo(sl_id)['user']
+                    userinfo = self.main.getUserInfo(sl_id)['user']
 
-                message = str("Your current balance is <b>%.2lf€</b>" %
-                              (
+                    message = str("Your current balance is <b>%.2lf€</b>" %
+                                  ((userinfo['balance']/100)))
 
-                                  (userinfo['balance']/100)
-                              )
-                              )
+                    self.main.send_msg(message, chatID=chat_id, markup="HTML")
 
-                self.main.send_msg(
-                    message, chatID=chat_id, markup="HTML")
-            else:
-                self.main.send_msg(
-                    "You are not allowed to do this!", chatID=chat_id)
+                else:
+                    self.main.send_msg(
+                        "Unkown command. Enter / in the chat or click on the [/] to see all available commands.", chatID=chat_id)
 
     def parseUserData(self, message):
         chat = message['message']['chat']
@@ -396,23 +401,24 @@ class StrichlisteWatcher(threading.Thread):
                         if transactType == TransactionType.RECHARGE:
 
                             message = str("<b>"+u'\U0001f4b5'+" You recharge your account!</b>\n\n"
-                                            "Ammount: <b>%.2lf€</b>\n"
-                                            "New balance: <b>%.2lf€</b>" % (transaction['amount']/100,
-                                                                    transaction['user']['balance'] / 100
-                                                                    ))
+                                          "Ammount: <b>%.2lf€</b>\n"
+                                          "New balance: <b>%.2lf€</b>" % (transaction['amount']/100,
+                                                                          transaction['user']['balance'] / 100
+                                                                          ))
                             self.main.send_msg(
                                 message, markup="HTML", chatID=chatid)
 
                         elif transactType == TransactionType.BUY_ARTICLE:
                             message = str("<b>"+u'\U0001f4b5'+" You have purchased an item!</b>\n\n"
-                                            "Ammount: <b>%.2lf€</b>\n"
-                                            "Item: <b>%s</b>\n"
-                                            "New balance: <b>%.2lf€</b>" % (
+                                          "Ammount: <b>%.2lf€</b>\n"
+                                          "Item: <b>%s</b>\n"
+                                          "New balance: <b>%.2lf€</b>" % (
                                                 transaction['article']['amount']/100,
-                                                html.escape(transaction['article']['name']),
+                                                html.escape(
+                                                    transaction['article']['name']),
                                                 transaction['user']['balance']/100
-                                            )
-                                            )
+                                          )
+                                          )
                             self.main.send_msg(
                                 message, markup="HTML", chatID=chatid)
                         elif transactType == TransactionType.SEND_MONEY:
@@ -422,10 +428,11 @@ class StrichlisteWatcher(threading.Thread):
                                 "Ammount: <b>%.2lf€</b>\n"
                                 "Note: <b>%s</b>\n"
                                 "New balance: <b>%.2lf€</b>\n" % (html.escape(transaction['recipient']['name']),
-                                                        transaction['amount'] / 100,
-                                                                  ("---" if transaction['comment'] == None or transaction['comment'] == "" else html.escape(transaction['comment'])),
-                                                        transaction['user']['balance']/100
-                                                        ))
+                                                                  transaction['amount'] / 100,
+                                                                  ("---" if transaction['comment'] == None or transaction['comment'] == "" else html.escape(
+                                                                      transaction['comment'])),
+                                                                  transaction['user']['balance']/100
+                                                                  ))
                             self.main.send_msg(
                                 message, markup="HTML", chatID=chatid)
 
@@ -436,10 +443,11 @@ class StrichlisteWatcher(threading.Thread):
                                           "Ammount: <b>%.2lf€</b>\n"
                                           "Note: <b>%s</b>\n"
                                           "New balance: <b>%.2lf€</b>\n" % (html.escape(transaction['sender']['name']),
-                                                                     transaction['amount'] / 100,
-                                                                            ("---" if transaction['comment'] == None or transaction['comment'] == "" else html.escape(transaction['comment'])),
-                                                                     transaction['user']['balance']/100
-                                                                     ))
+                                                                            transaction['amount'] / 100,
+                                                                            ("---" if transaction['comment'] == None or transaction['comment'] == "" else html.escape(
+                                                                                transaction['comment'])),
+                                                                            transaction['user']['balance']/100
+                                                                            ))
                             self.main.send_msg(
                                 message, markup="HTML", chatID=chatid)
                     elif not chatid and transactType == TransactionType.SEND_MONEY:
@@ -580,7 +588,8 @@ class StrichlisteTelegramBridge():
             data['text'] = message
             r = requests.post(self.bot_url + "/sendMessage", data=data)
             if r.status_code != 200:
-                 self.logger.warning("Sending finished, but with status code %s.", str(r.status_code))
+                self.logger.warning(
+                    "Sending finished, but with status code %s.", str(r.status_code))
             else:
                 self.logger.debug("Sending finished. " + str(r.status_code))
 
