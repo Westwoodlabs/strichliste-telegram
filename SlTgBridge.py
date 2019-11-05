@@ -74,7 +74,7 @@ class TelegramListener(threading.Thread):
                 self.username = self.test_token()
                 gotContact = True
                 # self.set_status(gettext("Connected as %(username)s.", username=self.username), ok=True)
-                self.logger.info("Connected as %s.", self.username)
+                self.logger.debug("Connected as %s.", self.username)
             except Exception as ex:
                 self.logger.warning(
                     "Got an exception while initially trying to connect to telegram (Listener not running: %(ex)s.  Waiting before trying again.)", ex=ex)
@@ -94,7 +94,7 @@ class TelegramListener(threading.Thread):
             self.logger.error("Exception caught in loop! " +
                               str(ex) + " Traceback: " + traceback.format_exc())
             # self.set_status(gettext("Connected as %(username)s.", username=self.username), ok = True)
-            self.logger.info("Connected as %s.", self.username)
+            self.logger.debug("Connected as %s.", self.username)
         # we had first contact after octoprint startup
         # so lets send startup message
         if self.first_contact:
@@ -110,7 +110,7 @@ class TelegramListener(threading.Thread):
                 "Not changing update_offset - otherwise would reduce it from {} to {}".format(self.update_offset, 1 + new_value))
 
     def processMessage(self, message):
-        self.logger.info("MESSAGE: " + str(message))
+        self.logger.debug("MESSAGE: " + str(message))
         # Get the update_id to only request newer Messages the next time
         self.set_update_offset(message['update_id'])
         # no message no cookies
@@ -135,7 +135,7 @@ class TelegramListener(threading.Thread):
 
         sl_id = self.main.isAuthorizedUser(telegram_chat_id=chat_id)
 
-        self.logger.info("Got a command: '%s' in chat %s",
+        self.logger.debug("Got a command: '%s' in chat %s",
                          command, message['message']['chat']['id'])
 
         if command == "/start" or command == "/help":
@@ -221,7 +221,7 @@ class TelegramListener(threading.Thread):
         return (chat_id, from_id)
 
     def getUpdates(self):
-        self.logger.info("listener: sending request with offset " +
+        self.logger.debug("listener: sending request with offset " +
                          str(self.update_offset) + "...")
         req = None
 
@@ -288,8 +288,8 @@ class TelegramListener(threading.Thread):
 
     def test_token(self):
         response = requests.get(self.main.bot_url+"/getMe")
-        self.logger.info("getMe returned: " + str(response.json()))
-        self.logger.info("getMe status code: " + str(response.status_code))
+        self.logger.debug("getMe returned: " + str(response.json()))
+        self.logger.debug("getMe status code: " + str(response.status_code))
         json = response.json()
         if not 'ok' in json or not json['ok']:
             if json['description']:
@@ -311,7 +311,7 @@ class StrichlisteWatcher(threading.Thread):
         self.cachedUserList = None
 
     def run(self):
-        self.logger.info("StrichlisteWatcher is running")
+        self.logger.debug("StrichlisteWatcher is running")
         try:
             while not self.do_stop:
                 try:
@@ -323,7 +323,7 @@ class StrichlisteWatcher(threading.Thread):
             self.logger.exception(
                 "An Exception crashed the Transaction checker : " + str(ex))
 
-        self.logger.info("StrichlisteWatcher exits NOW.")
+        self.logger.debug("StrichlisteWatcher exits NOW.")
 
     def loop(self):
         try:
@@ -340,7 +340,7 @@ class StrichlisteWatcher(threading.Thread):
 
             # No LastUserList or invalid List = no changes. Save list.
             else:
-                self.logger.info(
+                self.logger.debug(
                     "First run. Cache only UserList.")
 
             self.updateCachedUserList()
@@ -363,7 +363,7 @@ class StrichlisteWatcher(threading.Thread):
                 self.cachedUserList[user["id"]] = user["updated"]
 
     def processLastTransactions(self, userid, since):
-        self.logger.info("Process Transactions for user %d since %s" %
+        self.logger.debug("Process Transactions for user %d since %s" %
                          (userid, since))
 
         req = requests.get(config.strichliste['apiurl'] +
@@ -391,7 +391,7 @@ class StrichlisteWatcher(threading.Thread):
                     elif transaction['recipient'] and not transaction['sender'] and not transaction['article']:
                         transactType = TransactionType.SEND_MONEY
 
-                    self.logger.info(
+                    self.logger.debug(
                         "Process Transaction %s (%s) from %s", str(transactType), str(transaction['id']), str(transaction['created']))
 
                     chatid = self.main.isAuthorizedUser(
@@ -457,7 +457,7 @@ class StrichlisteWatcher(threading.Thread):
                             r"^([a-zA-Z0-9]{%d})$" % config.strichliste['activation_token_len'], comment)
                         if match:
                             token = match.group(1)
-                            self.logger.info(
+                            self.logger.debug(
                                 "Transaction has valid token '%s'", token)
                             if self.main.pendingActivations != None:
                                 request = self.main.pendingActivations.get(
@@ -481,7 +481,7 @@ class StrichlisteWatcher(threading.Thread):
                                 self.logger.error(
                                     "No pending request with this token")
                     else:
-                        self.logger.info(
+                        self.logger.debug(
                             "User %s not registerd for telegram messages", str(transaction['user']['id']))
 
     def getUserIdsWithChanges(self):
@@ -493,7 +493,7 @@ class StrichlisteWatcher(threading.Thread):
                 self.logger.debug("Check User %d" % user["id"])
                 if not self.cachedUserList.get(user["id"]) == None:
                     if user['updated'] != self.cachedUserList.get(user["id"]):
-                        self.logger.info(
+                        self.logger.debug(
                             "yes, user %d has changes! (UserList=%s, cachedUserList=%s)", user['id'], user['updated'], self.cachedUserList.get(user["id"]))
                         userIdsWithChanges.append(user["id"])
                         # userIdsWithChanges.append([user["id"], lastuserobj["updated"]])
@@ -514,7 +514,7 @@ class StrichlisteWatcher(threading.Thread):
 class StrichlisteTelegramBridge():
 
     def __init__(self):
-        print("StrichlisteTelegramBride started.")
+        
         self.threadStrichlisteWatcher = None
         self.threadTelegramListener = None
         self.sl_json_user = None
@@ -526,16 +526,18 @@ class StrichlisteTelegramBridge():
         # load Authorized user list
         self.loadAuthorizedUsers()
 
+        self.logger.info("Strichliste Telegram Bridge starting...")
+
     # start StrichlisteWatcher
     def start_StrichlisteWatcher(self):
         if self.threadStrichlisteWatcher is None:
-            self.logger.info("Starting StrichlisteWatcher.")
+            self.logger.info("Starting Thread StrichlisteWatcher.")
             self.threadStrichlisteWatcher = StrichlisteWatcher(self)
             self.threadStrichlisteWatcher.start()
 
     def stop_StrichlisteWatcher(self):
         if self.threadStrichlisteWatcher is not None:
-            self.logger.info("Stopping StrichlisteWatcher.")
+            self.logger.info("Stopping Thread StrichlisteWatcher.")
             self.threadStrichlisteWatcher.stop()
             self.threadStrichlisteWatcher = None
 
@@ -543,7 +545,7 @@ class StrichlisteTelegramBridge():
     def start_TelegramListener(self):
         if config.telegram['bottoken'] != "" and config.telegram['apiurl'] != "":
             if self.threadTelegramListener is None:
-                self.logger.info("Starting TelegramListener.")
+                self.logger.info("Starting Thread TelegramListener.")
                 self.bot_url = config.telegram['apiurl'] + \
                     config.telegram['bottoken']
                 self.threadTelegramListener = TelegramListener(self)
@@ -554,7 +556,7 @@ class StrichlisteTelegramBridge():
     # stops the telegram listener thread
     def stop_listening(self):
         if self.threadTelegramListener is not None:
-            self.logger.info("Stopping TelegramListener.")
+            self.logger.info("Stopping Thread TelegramListener.")
             self.threadTelegramListener.stop()
             self.threadTelegramListener = None
 
@@ -563,7 +565,7 @@ class StrichlisteTelegramBridge():
             self.logger.exception("Can't send message chatID is empty!")
         try:
 
-            self.logger.info(
+            self.logger.debug(
                 "Sending a message: " + message.replace("\n", "\\n") + " chatID=" + str(chatID))
             data = {}
             # Do we want to show web link previews?
@@ -610,7 +612,7 @@ class StrichlisteTelegramBridge():
             with open(self.authorizedUsersFile, 'w') as f:
                 json.dump(self.authorizedUsers, f)
 
-            self.logger.info("authorizedUsersFile successful saved")
+            self.logger.debug("authorizedUsersFile successful saved")
 
         except Exception as ex:
             self.logger.exception(
@@ -625,14 +627,14 @@ class StrichlisteTelegramBridge():
             with open(self.authorizedUsersFile, 'r') as f:
                 self.authorizedUsers = json.load(f)
 
-            self.logger.info("authorizedUsersFile successful loaded")
+            self.logger.debug("authorizedUsersFile successful loaded")
 
         except Exception as ex:
             self.logger.exception(
                 "Caught an exception in loadAuthorizedUsers(): %s", ex)
 
     def addAuthorizedUsers(self, sl_id, telegram_chat_id):
-        self.logger.info(
+        self.logger.debug(
             "Adding Strichliste UserID '%s' with Telegram ChatID '%s' to authorized user list.", str(sl_id), str(telegram_chat_id))
         old_sl_id = self.isAuthorizedUser(telegram_chat_id=telegram_chat_id)
         if old_sl_id:
@@ -642,7 +644,7 @@ class StrichlisteTelegramBridge():
         self.saveAuthorizedUsers()
 
     def deleteAuthorizedUsers(self, sl_id):
-        self.logger.info(
+        self.logger.debug(
             "Deleting Strichliste UserID '%s' from uthorized user list.", str(sl_id))
         del self.authorizedUsers[str(sl_id)]
         self.saveAuthorizedUsers()
