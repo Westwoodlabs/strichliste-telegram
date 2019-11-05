@@ -1,3 +1,5 @@
+#!/usr/bin/python3 -u
+ 
 from enum import Enum
 from urllib.parse import urlencode
 from datetime import datetime
@@ -9,19 +11,18 @@ import json
 import requests
 import config
 import traceback
-import secrets
 import re
 import random
 import string
 import html
 
 
-# Docu
-# https: // github.com/strichliste/strichliste-backend/blob/master/docs/API.md
-# https: // www.python-kurs.eu/threads.php
-# https: // mcuoneclipse.com/2019/04/01/log2ram-extending-sd-card-lifetime-for-raspberry-pi-lorawan-gateway/
-# https: // github.com/fabianonline/OctoPrint-Telegram/blob/stable/octoprint_telegram/__init__.py
-# https: // www.thomaschristlieb.de/ein-python-script-mit-systemd-als-daemon-systemd-tut-garnicht-weh/
+# Refernces
+# https://github.com/strichliste/strichliste-backend/blob/master/docs/API.md
+# https://www.python-kurs.eu/threads.php
+# https://mcuoneclipse.com/2019/04/01/log2ram-extending-sd-card-lifetime-for-raspberry-pi-lorawan-gateway/
+# https://github.com/fabianonline/OctoPrint-Telegram/blob/stable/octoprint_telegram/__init__.py
+# https://www.thomaschristlieb.de/ein-python-script-mit-systemd-als-daemon-systemd-tut-garnicht-weh/
 
 scriptdir = os.path.dirname(os.path.realpath(__file__))
 
