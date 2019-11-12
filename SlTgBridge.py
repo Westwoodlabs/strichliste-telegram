@@ -309,6 +309,7 @@ class StrichlisteWatcher(threading.Thread):
         self.do_stop = False
         self.latestUserList = None
         self.cachedUserList = None
+        self.transactionsDeletableList = []
 
     def run(self):
         self.logger.debug("StrichlisteWatcher is running")
@@ -380,7 +381,37 @@ class StrichlisteWatcher(threading.Thread):
                                           " Traceback: " + traceback.format_exc())
                     break
 
-                if dtcreated > dtupdated:
+                # Check for possible undo transaction
+                isPossibleUndo = False
+                if transaction['id'] in self.transactionsDeletableList:
+                    isPossibleUndo = True
+
+
+                if dtcreated > dtupdated or isPossibleUndo:
+
+                    isUndo = False
+                    # Check for undo transactions
+                    if isPossibleUndo:
+                        if transaction['isDeleted']:
+                            isUndo = True
+                            self.transactionsDeletableList.remove(transaction['id'])
+                        else:
+                            # old transaction that is no undo
+                            continue
+                    elif transaction['isDeleted'] and transaction['isDeletable'] == False:
+                        # Undo action we have not in list
+                        isUndo = True
+                    else:
+                        # possible undo in future
+                        if transaction['isDeletable'] and transaction['isDeleted'] == False:
+                            self.logger.info("We add this transaction (%i) to isDeletableList", transaction['id'])
+                            # Add to isDeletableList (Undo's)
+                            self.transactionsDeletableList.append(transaction['id'])
+                    
+                    msgPrefix = u'\U0001f4b5'
+                    if isUndo:
+                        msgPrefix = u'\U0001f6ab'+" UNDO OF:"
+                        self.logger.info("This is an undo (%i)", transaction['id'])
 
                     if not transaction['recipient'] and not transaction['sender'] and not transaction['article']:
                         transactType = TransactionType.RECHARGE
@@ -394,13 +425,15 @@ class StrichlisteWatcher(threading.Thread):
                     self.logger.debug(
                         "Process Transaction %s (%s) from %s", str(transactType), str(transaction['id']), str(transaction['created']))
 
+                    
+
                     chatid = self.main.isAuthorizedUser(
                         strichliste_user_id=transaction['user']['id'])
                     if chatid:
 
                         if transactType == TransactionType.RECHARGE:
 
-                            message = str("<b>"+u'\U0001f4b5'+" You recharge your account!</b>\n\n"
+                            message = str("<b>"+msgPrefix+" You recharge your account!</b>\n\n"
                                           "Ammount: <b>%.2lf€</b>\n"
                                           "New balance: <b>%.2lf€</b>" % (transaction['amount']/100,
                                                                           transaction['user']['balance'] / 100
@@ -409,7 +442,7 @@ class StrichlisteWatcher(threading.Thread):
                                 message, markup="HTML", chatID=chatid)
 
                         elif transactType == TransactionType.BUY_ARTICLE:
-                            message = str("<b>"+u'\U0001f4b5'+" You have purchased an item!</b>\n\n"
+                            message = str("<b>"+msgPrefix+" You have purchased an item!</b>\n\n"
                                           "Ammount: <b>%.2lf€</b>\n"
                                           "Item: <b>%s</b>\n"
                                           "New balance: <b>%.2lf€</b>" % (
@@ -423,7 +456,7 @@ class StrichlisteWatcher(threading.Thread):
                                 message, markup="HTML", chatID=chatid)
                         elif transactType == TransactionType.SEND_MONEY:
                             message = str(
-                                "<b>"+u'\U0001f4b5'+" You sent money!</b>\n\n"
+                                "<b>"+msgPrefix+" You sent money!</b>\n\n"
                                 "Recipient: <b>%s</b>\n"
                                 "Ammount: <b>%.2lf€</b>\n"
                                 "Note: <b>%s</b>\n"
@@ -438,7 +471,7 @@ class StrichlisteWatcher(threading.Thread):
 
                         if transactType == TransactionType.RECEIVE_MONEY:
 
-                            message = str("<b>"+u'\U0001f4b5'+" You recived money!</b>\n\n"
+                            message = str("<b>"+msgPrefix+" You recived money!</b>\n\n"
                                           "Sender: <b>%s</b>\n"
                                           "Ammount: <b>%.2lf€</b>\n"
                                           "Note: <b>%s</b>\n"
@@ -483,6 +516,8 @@ class StrichlisteWatcher(threading.Thread):
                     else:
                         self.logger.debug(
                             "User %s not registerd for telegram messages", str(transaction['user']['id']))
+            
+            print(self.transactionsDeletableList)
 
     def getUserIdsWithChanges(self):
         userIdsWithChanges = []
