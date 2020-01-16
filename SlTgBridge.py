@@ -434,7 +434,7 @@ class StrichlisteWatcher(threading.Thread):
                         if transactType == TransactionType.RECHARGE:
 
                             message = str("<b>"+msgPrefix+" Your account was recharged!</b>\n\n"
-                                          "Ammount: <b>%.2lf€</b>\n"
+                                          "Amount: <b>%.2lf€</b>\n"
                                           "New balance: <b>%.2lf€</b>" % (transaction['amount']/100,
                                                                           transaction['user']['balance'] / 100
                                                                           ))
@@ -443,7 +443,7 @@ class StrichlisteWatcher(threading.Thread):
 
                         elif transactType == TransactionType.BUY_ARTICLE:
                             message = str("<b>"+msgPrefix+" An item was purchased!</b>\n\n"
-                                          "Ammount: <b>%.2lf€</b>\n"
+                                          "Amount: <b>%.2lf€</b>\n"
                                           "Item: <b>%s</b>\n"
                                           "New balance: <b>%.2lf€</b>" % (
                                                 transaction['article']['amount']/100,
@@ -458,7 +458,7 @@ class StrichlisteWatcher(threading.Thread):
                             message = str(
                                 "<b>"+msgPrefix+" Money was sent!</b>\n\n"
                                 "Recipient: <b>%s</b>\n"
-                                "Ammount: <b>%.2lf€</b>\n"
+                                "Amount: <b>%.2lf€</b>\n"
                                 "Note: <b>%s</b>\n"
                                 "New balance: <b>%.2lf€</b>\n" % (html.escape(transaction['recipient']['name']),
                                                                   transaction['amount'] / 100,
@@ -473,7 +473,7 @@ class StrichlisteWatcher(threading.Thread):
 
                             message = str("<b>"+msgPrefix+" Money was received!</b>\n\n"
                                           "Sender: <b>%s</b>\n"
-                                          "Ammount: <b>%.2lf€</b>\n"
+                                          "Amount: <b>%.2lf€</b>\n"
                                           "Note: <b>%s</b>\n"
                                           "New balance: <b>%.2lf€</b>\n" % (html.escape(transaction['sender']['name']),
                                                                             transaction['amount'] / 100,
