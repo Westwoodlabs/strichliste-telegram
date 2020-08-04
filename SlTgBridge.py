@@ -170,7 +170,7 @@ class TelegramListener(threading.Thread):
                 if command == "/unmap":
 
                     self.main.send_msg(
-                        "You won't get any more notifications from now on.", markup="HTML", chatID=chat_id)
+                        "You won't get any more notifications from now.", markup="HTML", chatID=chat_id)
                     self.main.deleteAuthorizedUsers(sl_id)
 
                 elif command == "/me":
@@ -433,8 +433,8 @@ class StrichlisteWatcher(threading.Thread):
 
                         if transactType == TransactionType.RECHARGE:
 
-                            message = str("<b>"+msgPrefix+" You recharge your account!</b>\n\n"
-                                          "Ammount: <b>%.2lf€</b>\n"
+                            message = str("<b>"+msgPrefix+" Your account was recharged!</b>\n\n"
+                                          "Amount: <b>%.2lf€</b>\n"
                                           "New balance: <b>%.2lf€</b>" % (transaction['amount']/100,
                                                                           transaction['user']['balance'] / 100
                                                                           ))
@@ -442,8 +442,8 @@ class StrichlisteWatcher(threading.Thread):
                                 message, markup="HTML", chatID=chatid)
 
                         elif transactType == TransactionType.BUY_ARTICLE:
-                            message = str("<b>"+msgPrefix+" You have purchased an item!</b>\n\n"
-                                          "Ammount: <b>%.2lf€</b>\n"
+                            message = str("<b>"+msgPrefix+" An item was purchased!</b>\n\n"
+                                          "Amount: <b>%.2lf€</b>\n"
                                           "Item: <b>%s</b>\n"
                                           "New balance: <b>%.2lf€</b>" % (
                                                 transaction['article']['amount']/100,
@@ -456,9 +456,9 @@ class StrichlisteWatcher(threading.Thread):
                                 message, markup="HTML", chatID=chatid)
                         elif transactType == TransactionType.SEND_MONEY:
                             message = str(
-                                "<b>"+msgPrefix+" You sent money!</b>\n\n"
+                                "<b>"+msgPrefix+" Money was sent!</b>\n\n"
                                 "Recipient: <b>%s</b>\n"
-                                "Ammount: <b>%.2lf€</b>\n"
+                                "Amount: <b>%.2lf€</b>\n"
                                 "Note: <b>%s</b>\n"
                                 "New balance: <b>%.2lf€</b>\n" % (html.escape(transaction['recipient']['name']),
                                                                   transaction['amount'] / 100,
@@ -471,9 +471,9 @@ class StrichlisteWatcher(threading.Thread):
 
                         if transactType == TransactionType.RECEIVE_MONEY:
 
-                            message = str("<b>"+msgPrefix+" You recived money!</b>\n\n"
+                            message = str("<b>"+msgPrefix+" Money was received!</b>\n\n"
                                           "Sender: <b>%s</b>\n"
-                                          "Ammount: <b>%.2lf€</b>\n"
+                                          "Amount: <b>%.2lf€</b>\n"
                                           "Note: <b>%s</b>\n"
                                           "New balance: <b>%.2lf€</b>\n" % (html.escape(transaction['sender']['name']),
                                                                             transaction['amount'] / 100,
@@ -680,7 +680,7 @@ class StrichlisteTelegramBridge():
 
     def deleteAuthorizedUsers(self, sl_id):
         self.logger.debug(
-            "Deleting Strichliste UserID '%s' from uthorized user list.", str(sl_id))
+            "Deleting Strichliste UserID '%s' from authorized user list.", str(sl_id))
         del self.authorizedUsers[str(sl_id)]
         self.saveAuthorizedUsers()
 
