@@ -9,13 +9,18 @@ import os.path
 import time
 import json
 import requests
-import config
 import traceback
 import re
 import random
 import string
 import html
+import sys
 
+try:
+    import config
+except ImportError:
+    print("config.py could not load. Does the file config file exist?")
+    sys.exit()
 
 # Refernces
 # https://github.com/strichliste/strichliste-backend/blob/master/docs/API.md
