@@ -145,7 +145,7 @@ class TelegramListener(threading.Thread):
 
         if command == "/start" or command == "/help":
             self.main.send_msg(
-                "Welcome to the <b>Strichliste Telegram Bridge</b>!\nEnter / in the chat or click on the [/] to see all available commands.", chatID=chat_id, markup="HTML")
+                "Welcome to the <b>Strichliste Telegram Bot</b>!\nEnter / in the chat or click on the [/] to see all available commands.", chatID=chat_id, markup="HTML")
 
         elif command == "/map":
 
@@ -551,7 +551,7 @@ class StrichlisteWatcher(threading.Thread):
             strtime, '%Y-%m-%d %H:%M:%S')  # 2019-07-20 19:24:41
 
 
-class StrichlisteTelegramBridge():
+class StrichlisteTelegramBot():
 
     def __init__(self):
         
@@ -726,7 +726,7 @@ def main():
     logging.basicConfig(level=config.logginglevel,
                         format='%(asctime)s %(funcName)s@%(name)s (%(threadName)s): %(message)s')
 
-    strichliste = StrichlisteTelegramBridge()
+    strichliste = StrichlisteTelegramBot()
     strichliste.start_StrichlisteWatcher()
     strichliste.start_TelegramListener()
 
