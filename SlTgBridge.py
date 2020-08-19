@@ -661,7 +661,17 @@ class StrichlisteTelegramBridge():
     def loadAuthorizedUsers(self):
         if config.authorizedUsersFile == "":
             self.logger.error("authorizedUsersFile is not set!")
-            return
+            sys.exit()
+
+        if not os.path.isfile(config.authorizedUsersFile) or os.stat(self.authorizedUsersFile).st_size == 0:
+            try:
+                with open(self.authorizedUsersFile, 'w') as outfile:
+                    data = {}
+                    json.dump(data, outfile)
+
+            except:
+                self.logger.exception("Couldn't create authorizedUsersFile at %s", self.authorizedUsersFile)
+                sys.exit()
 
         try:
             with open(self.authorizedUsersFile, 'r') as f:
@@ -670,8 +680,9 @@ class StrichlisteTelegramBridge():
             self.logger.debug("authorizedUsersFile successful loaded")
 
         except Exception as ex:
-            self.logger.exception(
-                "Caught an exception in loadAuthorizedUsers(): %s", ex)
+            self.logger.exception("Caught an exception in loadAuthorizedUsers(): %s", ex)
+            sys.exit()
+            
 
     def addAuthorizedUsers(self, sl_id, telegram_chat_id):
         self.logger.debug(
