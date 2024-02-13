@@ -437,12 +437,18 @@ class StrichlisteWatcher(threading.Thread):
                     if chatid:
 
                         if transactType == TransactionType.RECHARGE:
+                                
+                            if transaction['amount'] > 0:
+                                msg = "Your account has been topped up"
+                            else:
+                                msg ="Money has been paid out from your account"
 
-                            message = str("<b>"+msgPrefix+" Your account was recharged!</b>\n\n"
-                                          "Amount: <b>%.2lf€</b>\n"
-                                          "New balance: <b>%.2lf€</b>" % (transaction['amount']/100,
-                                                                          transaction['user']['balance'] / 100
-                                                                          ))
+                            message = str("<b>"+msgPrefix+" "+msg+"!</b>\n\n"
+                                        "Amount: <b>%.2lf€</b>\n"
+                                        "New balance: <b>%.2lf€</b>" % (transaction['amount']/100,
+                                                                        transaction['user']['balance'] / 100
+                                                                        ))
+
                             self.main.send_msg(
                                 message, markup="HTML", chatID=chatid)
 
