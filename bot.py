@@ -576,10 +576,21 @@ class StrichlisteTelegramBot():
 
     # start StrichlisteWatcher
     def start_StrichlisteWatcher(self):
-        if self.threadStrichlisteWatcher is None:
-            self.logger.info("Starting Thread StrichlisteWatcher.")
-            self.threadStrichlisteWatcher = StrichlisteWatcher(self)
-            self.threadStrichlisteWatcher.start()
+        if config.strichliste['apiurl'] != "":
+            # Test API URL
+            try:
+                requests.head(config.strichliste['apiurl'] , timeout=5)
+            except requests.ConnectionError:
+                self.logger.error("Can't reach Strichliste API '"+config.telegram['apiurl']+"'")
+                raise
+            
+            # Start Thread
+            if self.threadStrichlisteWatcher is None:
+                self.logger.info("Starting Thread StrichlisteWatcher.")
+                self.threadStrichlisteWatcher = StrichlisteWatcher(self)
+                self.threadStrichlisteWatcher.start()
+        else:
+            self.logger.error("Strichliste API-URL not set.")
 
     def stop_StrichlisteWatcher(self):
         if self.threadStrichlisteWatcher is not None:
@@ -597,7 +608,7 @@ class StrichlisteTelegramBot():
                 self.threadTelegramListener = TelegramListener(self)
                 self.threadTelegramListener.start()
         else:
-            self.logger.error("Telegram API-Url or Bottoken not set.")
+            self.logger.error("Telegram API-URL or Bottoken not set.")
 
     # stops the telegram listener thread
     def stop_listening(self):
