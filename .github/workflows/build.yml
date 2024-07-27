@@ -9,7 +9,6 @@ env:
 jobs:   
   build-image:
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/develop'
     steps:
       - name: Checkout
         uses: actions/checkout@v4
