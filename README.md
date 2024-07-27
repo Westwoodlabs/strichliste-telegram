@@ -28,7 +28,7 @@ services:
 - Start script ./bot.py
 
 See [sltgbridge.service](sltgbridge.service)
-```
+```ini
 [Unit]
 Description=Strichliste Telegram Bridge
 After=syslog.target
