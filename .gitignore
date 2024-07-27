@@ -1,7 +1,6 @@
 __pycache__/
 authorizedUsers.json
 config.py
-Dockerfile
 compose.yml
 
 *.iml
