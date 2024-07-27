@@ -6,10 +6,26 @@ A Telegram Bot written in Python for the great [Strichliste](https://github.com/
 [![Screenshot](.github/demo-thumb.jpg)](.github/demo.jpg)
 
 ## Usage
+
 - Get bot token form Telegram Bot Father
+
+### Docker
+
+- Map the config file and authorized users file to the container
+
+```yml
+services:
+  telegram:
+    image: ghcr.io/westwoodlabs/strichliste-telegram
+    restart: unless-stopped
+    volumes:
+      - ./data/telegram/authorizedUsers.json:/usr/src/app/authorizedUsers.json
+      - ./data/telegram/config.py:/usr/src/app/config.py
+```
+
+### systemd-Deamon
 - Rename config.default.py to config.py and change parameters
 - Start script ./bot.py
-## systemd-Deamon
 
 See [sltgbridge.service](sltgbridge.service)
 ```
